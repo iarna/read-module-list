@@ -3,30 +3,20 @@
   "version": "1.0.0",
   "description": "By contrast with `read-package-tree`, this reads a tree of modules as understood by node itself. A valid module can just have an `index.js` with no metadata– not a valida package, but absolutely a valid module.",
   "dependencies": {
-    "babel-autonode": "^1.0.4",
     "readable-stream": "^2.0.2",
     "readdir-scoped-modules": "^1.0.2"
   },
   "devDependencies": {
-    "babel": "^5.8.23",
-    "babel-autonode": "^1.0.0",
     "standard": "^5.3.1",
     "tap": "^1.4.1",
     "through2": "^2.0.0"
   },
   "scripts": {
-    "test": "standard src/*.js test/*.js && ./babel-tap.sh test/*.js",
-    "tap": "./babel-tap.sh",
-    "build": "babel-autonode",
-    "prepublish": "npm run build",
-    "prestart": "npm run build"
+    "test": "standard *.js test/*.js && tap test/*.js",
+    "tap": "tap test/*.js"
   },
   "keywords": [],
   "author": "Rebecca Turner <me@re-becca.org> (http://re-becca.org/)",
   "license": "ISC",
-  "babel-autonode.main": "src/index.js",
-  "main": "loader.js",
-  "babel": {
-    "retainLines": true
-  }
+  "main": "index.js"
 }

@@ -1,14 +1,27 @@
 'use test'
-import { test } from 'tap'
-import ReadModuleTree from '../src/index.js'
-import through from 'through2'
-import path from 'path'
-
-console.log(ReadModuleTree)
+var test = require('tap').test
+var ReadModuleTree = require('../index.js')
+var path = require('path')
 
 test('start', function (t) {
-  new ReadModuleTree(path.resolve('..')).pipe(through.obj(function (node) {
-    console.log(node)
+  var rmt = new ReadModuleTree(path.resolve(__dirname, '..'))
+  t.ok(rmt)
+  var tryPause = false
+  rmt.on('data', function (node) {
+    if (node.error) console.error(node.error)
+    t.ok(node, node.path)
+    if (!tryPause) {
+      tryPause = true
+      rmt.pause()
+      setTimeout(function () { rmt.resume() }, 200)
+    }
+  })
+  .on('error', function (err) {
+    t.exception(err)
     t.end()
-  }))
+  })
+  .on('end', function () {
+    t.pass()
+    t.end()
+  })
 })
