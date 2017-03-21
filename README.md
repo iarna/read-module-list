@@ -1,22 +1,41 @@
-# read-module-tree
+# read-module-list
 
-By contrast with `read-package-tree`, this reads a tree of modules as
-understood by node itself. A valid module can just have an `index.js` with
-no metadata– not a valida package, but absolutely a valid module.
+Read in the list of all modules (recursively) from your `node_modules` tree.
 
-Also by contrast with `read-package-tree` this does not return a tree,
-instead it streams an ordered list of modules. And that order is breadth
-first, alphabetized by `localeCompare`. The first node emitted will always
-be the top of the tree.
-
-## Usage
+## USAGE
 
 ```
-var readModuleTree = require('read-module-tree')
+var readModuleList = require('read-module-list')
 var through2 = require('through2')
-new readModuleTree().pipe(through2(function (module, next) {
+readModuleList('.').forEach(function (module) {
   console.log(module.name)
   console.log(module.path)
   next()
 })
 ```
+
+
+## EXPORTS
+
+### var readModuleList = require('read-module-list')
+
+### var Module = require('read-module-list').Module
+### new Module(opts)
+
+Constructs a new Module object with the following properties. `opts` has the same properties.
+
+* name — The name of the module, including scope if the module is scoped.
+* path — The path to the module on disk, as you'd see if you cd'ed into the directory.
+* realpath — The path to the module on disk without any symlinks in the path.
+* modulepath — A symbolic path representing where this path is in relation
+  to other modules.  For the top level module this is `/`, for its children
+  '/child` for their children, `/child/grandchild` and so on.
+* isLink — True if this module is contained within a symlink.
+* error — If there was an error associated with this module, the error is
+  stored here.  This can be an error other than ENOENT returned by `readdir`
+  or an error returned from `realpath` (for instance, when you have a broken
+  symlink).
+
+  this.modulepath = modulePath
+  this.isLink = path.resolve(dir) !== realdir
+  this.error = er
