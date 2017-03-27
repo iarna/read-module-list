@@ -23,7 +23,6 @@ function readModuleTree (dir, opts) {
 function readModulePath (seen, ModuleClass, name, dir, modulePath) {
   let realdir
   let realdirEr
-  let result
   return realpath(dir).then(rd => {
     realdir = rd
     if (seen[realdir]) {
@@ -35,7 +34,7 @@ function readModulePath (seen, ModuleClass, name, dir, modulePath) {
       seen = Object.create(seen)
       seen[realdir] = dir
     }
-  },error => realdirEr = error).then(() => {
+  }, error => realdirEr = error).then(() => {
     const mod = new ModuleClass({
       name: name,
       path: dir,

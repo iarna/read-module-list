@@ -1,3 +1,3 @@
 'use strict'
-module.exports = require('./async.js')
-module.exports.sync = require('./sync.js')
+module.exports = require('./sync.js')
+module.exports.async = require('./async.js')

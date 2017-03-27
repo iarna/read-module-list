@@ -1,7 +1,7 @@
 'use strict'
 const test = require('tap').test
-const readModuleTree = require('../index.js')
-const readModuleTreeSync = require('../index.js').sync
+const readModuleTree = require('../index.js').async
+const readModuleTreeSync = require('../index.js')
 const Module = readModuleTree.Module
 const path = require('path')
 const realpath = require('fs').realpathSync
