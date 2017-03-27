@@ -53,36 +53,70 @@ const fixture = new Tacks(
           name: 'hasdeps',
           version: '1.0.0'
         })
+      }),
+      cycle: Dir({
+        node_modules: Dir({
+          cycle: Symlink('/node_modules/cycle')
+        })
+      }),
+      broken: Symlink('/to/nowhere'),
+      bad_nm: Dir({
+        node_modules: File('')
       })
     })
   })
 )
 
-let expected
+function tp () {
+  const args = [].slice.call(arguments)
+  let result = args.shift()
+  for (let dir of args) {
+    result = path.resolve(result, 'node_modules', dir)
+  }
+  return result
+}
+
+let generalExpected
+let scopedExpected
 
 test('setup', function (t) {
   fixture.remove(testdir)
   fixture.create(testdir)
   const realdir = realpath(testdir)
-  expected = [
-    new Module({name: "basic", path: testdir, modulePath: "/", realpath: realdir}),
-    new Module({name: "@name/space", path: path.join(testdir, "node_modules", "@name", "space"), modulePath: "/@name/space", realpath: path.join(realdir, "node_modules", "@name", "space")}),
-    new Module({name: "scopechild", path: path.join(testdir, "node_modules", "@name", "space", "node_modules", "scopechild"), modulePath: "/@name/space/scopechild", realpath: path.join(realdir, "node_modules", "@name", "space", "node_modules", "scopechild")}),
-    new Module({name: "empty", path: path.join(testdir, "node_modules", "empty"), modulePath: "/empty", realpath: path.join(realdir, "node_modules", "empty")}),
-    new Module({name: "hasdeps", path: path.join(testdir, "node_modules", "hasdeps"), modulePath: "/hasdeps", realpath: path.join(realdir, "node_modules", "hasdeps")}),
-    new Module({name: "deep", path: path.join(testdir, "node_modules", "hasdeps", "node_modules", "deep"), modulePath: "/hasdeps/deep", realpath: path.join(realdir, "node_modules", "hasdeps", "node_modules", "deep")}),
-    new Module({name: "plain", path: path.join(testdir, "node_modules", "hasdeps", "node_modules", "plain"), modulePath: "/hasdeps/plain", realpath: path.join(realdir, "node_modules", "plain")}),
-    new Module({name: "plain", path: path.join(testdir, "node_modules", "plain"), modulePath: "/plain", realpath: path.join(realdir, "node_modules", "plain")})
+  generalExpected = [
+    new Module({name: 'basic', path: testdir, modulePath: '/', realpath: realdir}),
+    new Module({name: '@name/space', path: tp(testdir, '@name/space'), modulePath: '/@name/space', realpath: tp(realdir, '@name/space')}),
+    new Module({name: 'scopechild', path: tp(testdir, '@name/space', 'scopechild'), modulePath: '/@name/space/scopechild', realpath: tp(realdir, '@name/space', 'scopechild')}),
+    new Module({name: 'bad_nm', path: tp(testdir, 'bad_nm'), modulePath: '/bad_nm', realpath: tp(realdir, 'bad_nm'), error: 'ENOTDIR'}),
+    new Module({name: 'broken', path: tp(testdir, 'broken'), modulePath: '/broken', realpath: null, error: 'ENOENT'}),
+    new Module({name: 'cycle', path: tp(testdir, 'cycle'), modulePath: '/cycle', realpath: tp(realdir, 'cycle')}),
+    new Module({name: 'cycle', path: tp(testdir, 'cycle', 'cycle'), modulePath: '/cycle/cycle', realpath: tp(realdir, 'cycle'), error: 'EMODULECYCLE'}),
+    new Module({name: 'empty', path: tp(testdir, 'empty'), modulePath: '/empty', realpath: tp(realdir, 'empty')}),
+    new Module({name: 'hasdeps', path: tp(testdir, 'hasdeps'), modulePath: '/hasdeps', realpath: tp(realdir, 'hasdeps')}),
+    new Module({name: 'deep', path: tp(testdir, 'hasdeps', 'deep'), modulePath: '/hasdeps/deep', realpath: tp(realdir, 'hasdeps', 'deep')}),
+    new Module({name: 'plain', path: tp(testdir, 'hasdeps', 'plain'), modulePath: '/hasdeps/plain', realpath: tp(realdir, 'plain')}),
+    new Module({name: 'plain', path: tp(testdir, 'plain'), modulePath: '/plain', realpath: tp(realdir, 'plain')})
+  ]
+  scopedExpected = [
+    new Module({name: '@name/space', path: tp(testdir, '@name/space'), modulePath: '/', realpath: tp(realdir, '@name/space')}),
+    new Module({name: 'scopechild', path: tp(testdir, '@name/space', 'scopechild'), modulePath: '/scopechild', realpath: tp(realdir, '@name/space', 'scopechild')})
   ]
   t.done()
 })
 
-
 test('basic', function (t) {
-  const tree = readModuleTree(testdir)
-  t.is(tree.length, expected.length, 'tree-read got right number of modules')
-  for (let ii in expected) {
-    t.isDeeply(tree[ii], expected[ii], `module ${ii} is expected`)
+  const generalTree = readModuleTree(testdir)
+  t.is(generalTree.length, generalExpected.length, 'got right number of modules')
+  for (let ii in generalExpected) {
+    if (generalExpected[ii].error && generalTree[ii].error) generalTree[ii].error = generalTree[ii].error.code || true
+    t.isDeeply(generalTree[ii], generalExpected[ii], `module ${generalExpected[ii].name} (${ii}) is as expected`)
+  }
+
+  const scopedTree = readModuleTree(tp(testdir, '@name/space'))
+  t.is(scopedTree.length, scopedExpected.length, 'scoped root: got right number of modules')
+  for (let ii in scopedExpected) {
+    if (scopedExpected[ii].error && scopedTree[ii].error) scopedTree[ii].error = scopedTree[ii].error.code || true
+    t.isDeeply(scopedTree[ii], scopedExpected[ii], `scoped root: module ${scopedExpected[ii].name} (${ii}) is as expected`)
   }
   t.done()
 })
