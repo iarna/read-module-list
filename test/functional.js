@@ -1,6 +1,7 @@
 'use strict'
 const test = require('tap').test
-const readModuleTree = require('../sync.js')
+const readModuleTree = require('../index.js')
+const readModuleTreeSync = require('../index.js').sync
 const Module = readModuleTree.Module
 const path = require('path')
 const realpath = require('fs').realpathSync
@@ -84,7 +85,7 @@ test('setup', function (t) {
   fixture.create(testdir)
   const realdir = realpath(testdir)
   generalExpected = [
-    new Module({name: 'basic', path: testdir, modulePath: '/', realpath: realdir}),
+    new Module({name: path.basename(__filename, '.js'), path: testdir, modulePath: '/', realpath: realdir}),
     new Module({name: '@name/space', path: tp(testdir, '@name/space'), modulePath: '/@name/space', realpath: tp(realdir, '@name/space')}),
     new Module({name: 'scopechild', path: tp(testdir, '@name/space', 'scopechild'), modulePath: '/@name/space/scopechild', realpath: tp(realdir, '@name/space', 'scopechild')}),
     new Module({name: 'bad_nm', path: tp(testdir, 'bad_nm'), modulePath: '/bad_nm', realpath: tp(realdir, 'bad_nm'), error: 'ENOTDIR'}),
@@ -104,15 +105,40 @@ test('setup', function (t) {
   t.done()
 })
 
-test('basic', function (t) {
-  const generalTree = readModuleTree(testdir)
+test('basic async', function (t) {
+  return readModuleTree(testdir).then(generalTree => {
+    t.is(generalTree.length, generalExpected.length, 'got right number of modules')
+    for (let ii in generalExpected) {
+      if (generalExpected[ii].error && generalTree[ii].error) generalTree[ii].error = generalTree[ii].error.code || true
+      t.isDeeply(generalTree[ii], generalExpected[ii], `module ${generalExpected[ii].name} (${ii}) is as expected`)
+    }
+  }).finally(t.done)
+})
+
+test('scoped async', function (t) {
+  return readModuleTree(tp(testdir, '@name/space')).then(scopedTree => {
+    t.is(scopedTree.length, scopedExpected.length, 'scoped root: got right number of modules')
+    for (let ii in scopedExpected) {
+      if (scopedExpected[ii].error && scopedTree[ii].error) scopedTree[ii].error = scopedTree[ii].error.code || true
+      t.isDeeply(scopedTree[ii], scopedExpected[ii], `scoped root: module ${scopedExpected[ii].name} (${ii}) is as expected`)
+    }
+  }).finally(t.done)
+})
+
+test('basic sync', function (t) {
+  t.plan(generalExpected.length + 1)
+  const generalTree = readModuleTreeSync(testdir)
   t.is(generalTree.length, generalExpected.length, 'got right number of modules')
   for (let ii in generalExpected) {
     if (generalExpected[ii].error && generalTree[ii].error) generalTree[ii].error = generalTree[ii].error.code || true
     t.isDeeply(generalTree[ii], generalExpected[ii], `module ${generalExpected[ii].name} (${ii}) is as expected`)
   }
+  t.done()
+})
 
-  const scopedTree = readModuleTree(tp(testdir, '@name/space'))
+test('scoped sync', function (t) {
+  t.plan(scopedExpected.length + 1)
+  const scopedTree = readModuleTreeSync(tp(testdir, '@name/space'))
   t.is(scopedTree.length, scopedExpected.length, 'scoped root: got right number of modules')
   for (let ii in scopedExpected) {
     if (scopedExpected[ii].error && scopedTree[ii].error) scopedTree[ii].error = scopedTree[ii].error.code || true
