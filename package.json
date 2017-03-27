@@ -20,5 +20,12 @@
   "keywords": [],
   "author": "Rebecca Turner <me@re-becca.org> (http://re-becca.org/)",
   "license": "ISC",
-  "main": "index.js"
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "sync.js",
+    "async.js",
+    "module.js",
+    "readdir.js"
+  ]
 }
