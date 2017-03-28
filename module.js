@@ -11,5 +11,7 @@ function Module (opts) {
   this.modulepath = opts.modulePath
   this.isLink = path.resolve(opts.path) !== opts.realpath
   this.error = opts.error
+  this.parent = opts.parent
+  this.children = opts.children || []
 }
 

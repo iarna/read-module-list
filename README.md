@@ -5,19 +5,37 @@ Read in the list of all modules (recursively) from your `node_modules` tree.
 ## USAGE
 
 ```
-var readModuleList = require('read-module-list')
-var through2 = require('through2')
+const readModuleList = require('read-module-list')
 readModuleList('.').forEach(function (module) {
   console.log(module.name)
   console.log(module.path)
-  next()
+})
+```
+```
+const readModuleList = require('read-module-list').async
+readModuleList('.').each(function (module) {
+  console.log(module.name)
+  console.log(module.path)
 })
 ```
 
-
 ## EXPORTS
 
-### var readModuleList = require('read-module-list')
+### const readModuleList = require('read-module-list')
+### readModuleList(path[, options]) → Array
+### readModuleList.async(path[, options]) → Promise[Array]
+
+Return an array of module objects contained in `path`, with the module
+`path` as the first entry.
+
+`options` is an optional object with the following properties:
+
+* `filterWith` (optional) — A function accepting `(context, modname)` that
+  determines if modules should be added to the output and recursed into.  If
+  none is provided then all modules will be included. `context` is the Module object
+  whose children we're considering. `modname` is the name of the child we're considering.
+* `ModuleClass` (optional) — The class to construct module objects from.  This defaults to
+  the `Module` export.
 
 ### var Module = require('read-module-list').Module
 ### new Module(opts)
@@ -35,7 +53,5 @@ Constructs a new Module object with the following properties. `opts` has the sam
   stored here.  This can be an error other than ENOENT returned by `readdir`
   or an error returned from `realpath` (for instance, when you have a broken
   symlink).
-
-  this.modulepath = modulePath
-  this.isLink = path.resolve(dir) !== realdir
-  this.error = er
+* parent — The Module this module was found in.
+* children — An array of the children this module contains
