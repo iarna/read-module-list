@@ -1,8 +1,9 @@
 'use strict'
 const test = require('tap').test
-const readModuleTree = require('../index.js').async
+const Bluebird = require('bluebird')
+const readModuleTreeAsync = require('../index.js').async
 const readModuleTreeSync = require('../index.js')
-const Module = readModuleTree.Module
+const Module = readModuleTreeSync.Module
 const path = require('path')
 const realpath = require('fs').realpathSync
 const Tacks = require('tacks')
@@ -105,46 +106,27 @@ test('setup', function (t) {
   t.done()
 })
 
-test('basic async', function (t) {
-  return readModuleTree(testdir).then(generalTree => {
-    t.is(generalTree.length, generalExpected.length, 'got right number of modules')
-    for (let ii in generalExpected) {
-      if (generalExpected[ii].error && generalTree[ii].error) generalTree[ii].error = generalTree[ii].error.code || true
-      t.isDeeply(generalTree[ii], generalExpected[ii], `module ${generalExpected[ii].name} (${ii}) is as expected`)
-    }
-  }).finally(t.done)
-})
-
-test('scoped async', function (t) {
-  return readModuleTree(tp(testdir, '@name/space')).then(scopedTree => {
-    t.is(scopedTree.length, scopedExpected.length, 'scoped root: got right number of modules')
-    for (let ii in scopedExpected) {
-      if (scopedExpected[ii].error && scopedTree[ii].error) scopedTree[ii].error = scopedTree[ii].error.code || true
-      t.isDeeply(scopedTree[ii], scopedExpected[ii], `scoped root: module ${scopedExpected[ii].name} (${ii}) is as expected`)
-    }
-  }).finally(t.done)
-})
-
-test('basic sync', function (t) {
-  t.plan(generalExpected.length + 1)
-  const generalTree = readModuleTreeSync(testdir)
-  t.is(generalTree.length, generalExpected.length, 'got right number of modules')
-  for (let ii in generalExpected) {
-    if (generalExpected[ii].error && generalTree[ii].error) generalTree[ii].error = generalTree[ii].error.code || true
-    t.isDeeply(generalTree[ii], generalExpected[ii], `module ${generalExpected[ii].name} (${ii}) is as expected`)
+function areTreesTheSame (t, actualTree, expectedTree, label) {
+  t.is(actualTree.length, expectedTree.length, `${label}: got right number of modules`)
+  for (let ii in expectedTree) {
+    actualTree[ii].children = []
+    actualTree[ii].parent = undefined
+    if (expectedTree[ii].error && actualTree[ii].error) actualTree[ii].error = actualTree[ii].error.code || true
+    t.isDeeply(actualTree[ii], expectedTree[ii], `${label}: module ${expectedTree[ii].name} (${ii}) is as expected`)
   }
-  t.done()
-})
+}
 
-test('scoped sync', function (t) {
-  t.plan(scopedExpected.length + 1)
-  const scopedTree = readModuleTreeSync(tp(testdir, '@name/space'))
-  t.is(scopedTree.length, scopedExpected.length, 'scoped root: got right number of modules')
-  for (let ii in scopedExpected) {
-    if (scopedExpected[ii].error && scopedTree[ii].error) scopedTree[ii].error = scopedTree[ii].error.code || true
-    t.isDeeply(scopedTree[ii], scopedExpected[ii], `scoped root: module ${scopedExpected[ii].name} (${ii}) is as expected`)
-  }
-  t.done()
+test('functional', function (t) {
+  return Bluebird.all([
+    areTreesTheSame(t, readModuleTreeSync(testdir), generalExpected, 'basic sync'),
+    areTreesTheSame(t, readModuleTreeSync(tp(testdir, '@name/space')), scopedExpected, 'scoped sync'),
+    readModuleTreeAsync(testdir).then(generalTree => {
+      areTreesTheSame(t, generalTree, generalExpected, 'basic async')
+    }),
+    readModuleTreeAsync(tp(testdir, '@name/space')).then(scopedTree => {
+      areTreesTheSame(t, scopedTree, scopedExpected, 'scoped async')
+    })
+  ]).finally(t.done)
 })
 
 test('cleanup', function (t) {
