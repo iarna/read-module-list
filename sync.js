@@ -81,7 +81,7 @@ function readModulePath (seen, ModuleClass, name, dir, modulePath, filterWith, p
 
     for (let ii = 0; ii < files.length; ++ii) {
       const file = files[ii]
-      result.push.apply(result, readModulePath(seen, ModuleClass, file, path.join(dir, 'node_modules', file), path.join(modulePath, file), filterWith, parent))
+      result.push.apply(result, readModulePath(seen, ModuleClass, file, path.join(dir, 'node_modules', file), path.join(modulePath, file), filterWith, mod))
     }
   }
   return result
