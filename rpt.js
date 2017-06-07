@@ -7,6 +7,7 @@ const validate = require('aproba')
 const readModuleList = require('./index.js')
 const Bluebird = require('bluebird')
 const rpj = require('./rpj.js')
+const rpjAsync = require('./rpj-async.js')
 const Module = require('./module.js')
 
 class Package extends Module {
@@ -35,7 +36,7 @@ function rpt (root, filterWith) {
 function rptAsync (root, filterWith) {
   return readModuleList.async(root, {filterWith: filterWith, ModuleClass: AsyncPackage}).map(item => {
     if (item.error) return item
-    return rpj.async(path.join(item.path, 'package.json')).then(data => item.package = data, err => item.error = err).thenReturn(item)
+    return rpjAsync(path.join(item.path, 'package.json')).then(data => item.package = data, err => item.error = err).thenReturn(item)
   })
 }
 
